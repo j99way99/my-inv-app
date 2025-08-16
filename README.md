@@ -26,9 +26,11 @@
 - **JWT** - 인증을 위한 JSON Web Token
 - **bcryptjs** - 비밀번호 암호화
 
-### 인프라
+### 인프라 & DevOps
 - **Docker** - 컨테이너화
 - **Docker Compose** - 멀티 컨테이너 관리
+- **GitHub Actions** - CI/CD 파이프라인
+- **Nginx** - 리버스 프록시 및 로드 밸런서
 
 ## 프로젝트 구조
 
@@ -90,3 +92,76 @@ npm run dev
 
 ### Frontend
 - `NEXT_PUBLIC_API_URL` - 백엔드 API URL
+
+## CI/CD 파이프라인
+
+이 프로젝트는 GitHub Actions를 사용한 자동 배포 파이프라인을 포함합니다.
+
+### 배포 트리거
+- `main` 브랜치에 push할 때 자동 배포
+- 수동 배포도 가능 (workflow_dispatch)
+
+### 배포 과정
+1. **테스트 단계**
+   - 백엔드/프론트엔드 의존성 설치
+   - 테스트 실행 (있는 경우)
+   - 프론트엔드 빌드 검증
+
+2. **빌드 및 배포 단계**
+   - Docker 이미지 빌드
+   - Docker Hub에 이미지 푸시
+   - 서버에 SSH 접속하여 배포
+   - Slack 알림 (선택사항)
+
+### 필요한 GitHub Secrets
+
+다음 secrets을 GitHub 저장소에 설정해야 합니다:
+
+#### Docker Hub
+- `DOCKER_USERNAME` - Docker Hub 사용자명
+- `DOCKER_PASSWORD` - Docker Hub 비밀번호
+
+#### 서버 접속
+- `HOST` - 배포 서버 IP 주소
+- `USERNAME` - 서버 사용자명
+- `SSH_PRIVATE_KEY` - SSH 개인키
+- `PORT` - SSH 포트 (기본값: 22)
+
+#### 알림 (선택사항)
+- `SLACK_WEBHOOK_URL` - Slack 웹훅 URL
+
+### 서버 설정
+
+배포 서버에서 다음 설정이 필요합니다:
+
+1. **프로젝트 클론**
+```bash
+cd /opt
+git clone https://github.com/j99way99/small-inv-management.git
+cd small-inv-management
+```
+
+2. **환경 변수 설정**
+```bash
+cp .env.example .env
+# .env 파일을 편집하여 실제 값으로 설정
+```
+
+3. **SSL 인증서 설정** (HTTPS 사용 시)
+```bash
+mkdir -p nginx/ssl
+# SSL 인증서를 nginx/ssl/ 디렉토리에 배치
+# cert.pem과 key.pem 파일 필요
+```
+
+4. **배포 스크립트 권한**
+```bash
+chmod +x deploy.sh
+```
+
+### 프로덕션 배포 명령
+
+```bash
+# 프로덕션 환경으로 배포
+docker-compose -f docker-compose.prod.yml up -d
+```

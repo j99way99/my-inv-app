@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "mongoose": "^8.16.5",
+    "next": "^15.4.6"
+  }
+}

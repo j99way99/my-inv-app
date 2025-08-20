@@ -16,7 +16,7 @@ services:
       - inventory-network-prod
 
   backend:
-    image: ${DOCKER_USERNAME}/small-inv-backend:latest
+    image: ${DOCKER_USERNAME}/my-inv-backend:latest
     container_name: inventory-backend-prod
     restart: unless-stopped
     ports:
@@ -33,7 +33,7 @@ services:
       - inventory-network-prod
 
   frontend:
-    image: ${DOCKER_USERNAME}/small-inv-frontend:latest
+    image: ${DOCKER_USERNAME}/my-inv-frontend:latest
     container_name: inventory-frontend-prod
     restart: unless-stopped
     ports:

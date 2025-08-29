@@ -35,7 +35,7 @@
 ## 프로젝트 구조
 
 ```
-small-inv-management/
+my-inv-app/
 ├── app-aws-deploy/          # 메인 애플리케이션
 │   ├── backend/             # Node.js 백엔드
 │   │   ├── models/         # MongoDB 모델
@@ -137,7 +137,7 @@ npm run dev
 1. **프로젝트 클론**
 ```bash
 cd /opt
-git clone https://github.com/j99way99/small-inv-management.git
+git clone https://github.com/j99way99/my-inv-app.git
 cd small-inv-management
 ```
 

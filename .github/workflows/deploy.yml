@@ -109,10 +109,10 @@ jobs:
           docker pull ${{ secrets.DOCKER_USERNAME }}/my-inv-frontend:latest
           
           # Stop existing containers
-          docker-compose down
+          docker-compose -f docker-compose.prod.yml down
           
           # Start new containers with latest images
-          docker-compose up -d
+          docker-compose -f docker-compose.prod.yml up -d
           
           # Clean up old images
           docker image prune -f

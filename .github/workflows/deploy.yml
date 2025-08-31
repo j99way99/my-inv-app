@@ -87,6 +87,8 @@ jobs:
         tags: |
           ${{ secrets.DOCKER_USERNAME }}/my-inv-frontend:latest
           ${{ secrets.DOCKER_USERNAME }}/my-inv-frontend:${{ github.sha }}
+        build-args: |
+          NEXT_PUBLIC_API_URL=http://${{ secrets.HOST }}:5001/api
         cache-from: type=gha
         cache-to: type=gha,mode=max
 

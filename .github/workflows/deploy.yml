@@ -90,52 +90,55 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
+    - name: Setup SSH key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        ssh-keyscan -p ${{ secrets.PORT }} -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
+
     - name: Deploy to server
-      uses: appleboy/ssh-action@v1.0.0
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: ${{ secrets.PORT }}
-        command_timeout: 10m
-        script: |
-          set -e
-          echo "===== Starting deployment ====="
-          
-          # Navigate to project directory
-          echo "1. Navigating to project directory..."
-          cd /opt/my-inv-app
-          
-          # Pull latest code
-          echo "2. Pulling latest code..."
-          git pull origin main
-          
-          # Pull latest Docker images
-          echo "3. Pulling Docker images..."
-          echo "   - Pulling backend image..."
-          docker pull ${{ secrets.DOCKER_USERNAME }}/my-inv-backend:latest
-          echo "   - Pulling frontend image..."
-          docker pull ${{ secrets.DOCKER_USERNAME }}/my-inv-frontend:latest
-          
-          # Stop existing containers
-          echo "4. Stopping existing containers..."
-          docker-compose -f docker-compose.prod.yml down --timeout 30
-          
-          # Start new containers with latest images
-          echo "5. Starting new containers..."
-          docker-compose -f docker-compose.prod.yml up -d
-          
-          # Wait for containers to be healthy
-          echo "6. Waiting for containers to start..."
-          sleep 10
-          
-          # Check container status
-          echo "7. Checking container status..."
-          docker-compose -f docker-compose.prod.yml ps
-          
-          # Clean up old images
-          echo "8. Cleaning up old images..."
-          docker image prune -f
-          
-          echo "===== Deployment completed ====="
+      timeout-minutes: 5
+      run: |
+        ssh -i ~/.ssh/deploy_key -p ${{ secrets.PORT }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} << 'ENDSSH'
+        set -e
+        echo "===== Starting deployment ====="
+        
+        # Navigate to project directory
+        echo "1. Navigating to project directory..."
+        cd /opt/my-inv-app
+        
+        # Pull latest code
+        echo "2. Pulling latest code..."
+        git pull origin main
+        
+        # Pull latest Docker images
+        echo "3. Pulling Docker images..."
+        echo "   - Pulling backend image..."
+        docker pull ${{ secrets.DOCKER_USERNAME }}/my-inv-backend:latest
+        echo "   - Pulling frontend image..."
+        docker pull ${{ secrets.DOCKER_USERNAME }}/my-inv-frontend:latest
+        
+        # Stop existing containers
+        echo "4. Stopping existing containers..."
+        docker-compose -f docker-compose.prod.yml down --timeout 30
+        
+        # Start new containers with latest images
+        echo "5. Starting new containers..."
+        docker-compose -f docker-compose.prod.yml up -d
+        
+        # Wait for containers to be healthy
+        echo "6. Waiting for containers to start..."
+        sleep 10
+        
+        # Check container status
+        echo "7. Checking container status..."
+        docker-compose -f docker-compose.prod.yml ps
+        
+        # Clean up old images
+        echo "8. Cleaning up old images..."
+        docker image prune -f
+        
+        echo "===== Deployment completed ====="
+        ENDSSH
 

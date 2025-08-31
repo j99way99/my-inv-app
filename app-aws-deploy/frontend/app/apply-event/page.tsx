@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { API_URL } from '../config';
 
 interface Item {
   _id: string;
@@ -39,7 +40,7 @@ export default function ApplyEventPage() {
   const fetchItems = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5001/api/items', {
+      const response = await fetch(`${API_URL}/items`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -55,7 +56,7 @@ export default function ApplyEventPage() {
   const fetchEvents = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5001/api/apply-events', {
+      const response = await fetch(`${API_URL}/apply-events`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -93,8 +94,8 @@ export default function ApplyEventPage() {
     try {
       const token = localStorage.getItem('token');
       const url = editingEventId 
-        ? `http://localhost:5001/api/apply-events/${editingEventId}`
-        : 'http://localhost:5001/api/apply-events';
+        ? `${API_URL}/apply-events/${editingEventId}`
+        : `${API_URL}/apply-events`;
       
       const response = await fetch(url, {
         method: editingEventId ? 'PUT' : 'POST',
@@ -142,7 +143,7 @@ export default function ApplyEventPage() {
     
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5001/api/apply-events/${eventId}`, {
+      const response = await fetch(`${API_URL}/apply-events/${eventId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

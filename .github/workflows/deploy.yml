@@ -94,7 +94,7 @@ jobs:
 
     - name: Deploy to server
       uses: appleboy/ssh-action@v1.0.3
-      timeout-minutes: 10
+      timeout-minutes: 5
       with:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USERNAME }}
@@ -102,12 +102,22 @@ jobs:
         port: ${{ secrets.PORT }}
         script_stop: true
         debug: true
+        command_timeout: 300s
         script: |
-          cd /opt/my-inv-app && \
-          git pull origin main && \
-          docker pull ${{ secrets.DOCKER_USERNAME }}/my-inv-backend:latest && \
-          docker pull ${{ secrets.DOCKER_USERNAME }}/my-inv-frontend:latest && \
-          docker-compose -f docker-compose.prod.yml down && \
-          docker-compose -f docker-compose.prod.yml up -d && \
-          docker image prune -f
+          set -e
+          echo "Starting deployment..."
+          cd /opt/my-inv-app
+          echo "Pulling latest code..."
+          git pull origin main
+          echo "Pulling Docker images..."
+          docker pull ${{ secrets.DOCKER_USERNAME }}/my-inv-backend:latest
+          docker pull ${{ secrets.DOCKER_USERNAME }}/my-inv-frontend:latest
+          echo "Stopping existing containers..."
+          docker-compose -f docker-compose.prod.yml down || true
+          echo "Starting new containers..."
+          docker-compose -f docker-compose.prod.yml up -d
+          echo "Waiting for containers to be ready..."
+          sleep 30
+          docker ps
+          echo "Deployment completed!"
 

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { API_URL } from '../config';
 
 interface Item {
   _id: string;
@@ -146,7 +145,7 @@ export default function OrderListPage() {
   const fetchOrders = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/orders`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -204,7 +203,7 @@ export default function OrderListPage() {
   const handleCompleteOrder = async (orderId: string) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/orders/${orderId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/${orderId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

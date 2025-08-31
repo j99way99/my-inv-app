@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { API_URL } from './config';
 
 interface Item {
   _id: string;
@@ -26,7 +25,7 @@ export default function Home() {
   const fetchItems = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/items`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/items`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -47,7 +46,7 @@ export default function Home() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/items`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/items`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

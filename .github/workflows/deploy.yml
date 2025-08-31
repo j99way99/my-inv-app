@@ -46,7 +46,7 @@ jobs:
     - name: Build frontend
       run: |
         cd app-aws-deploy/frontend
-        npm run build
+        NEXT_PUBLIC_API_URL=http://localhost:5001/api npm run build
 
   build-and-deploy:
     needs: test

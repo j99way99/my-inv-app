@@ -91,7 +91,7 @@ jobs:
         cache-to: type=gha,mode=max
 
     - name: Deploy to server
-      uses: appleboy/ssh-action@v1.0.0
+      uses: appleboy/ssh-action@v1.0.3
       timeout-minutes: 10
       with:
         host: ${{ secrets.HOST }}
@@ -99,6 +99,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.PORT }}
         script_stop: true
+        debug: true
         script: |
           cd /opt/my-inv-app && \
           git pull origin main && \

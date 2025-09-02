@@ -1,0 +1,34 @@
+FROM node:18
+
+# cron과 docker cli 설치 (Ubuntu 기반)
+RUN apt-get update && apt-get install -y \
+    cron \
+    docker.io \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --only=production
+
+COPY . .
+
+# 크론잡 스크립트 복사 및 권한 설정
+COPY docker-cleanup.sh /usr/local/bin/docker-cleanup.sh
+RUN chmod +x /usr/local/bin/docker-cleanup.sh
+
+# 크론탭 설정
+RUN echo "0 2 * * * /usr/local/bin/docker-cleanup.sh" > /tmp/crontab && \
+    crontab /tmp/crontab && \
+    rm /tmp/crontab
+
+# 로그 디렉터리 생성
+RUN mkdir -p /var/log
+
+EXPOSE 5001
+
+# 크론 데몬과 Node.js 앱을 동시에 실행하는 스크립트
+COPY start-ubuntu.sh /start.sh
+RUN chmod +x /start.sh
+
+CMD ["/start.sh"]

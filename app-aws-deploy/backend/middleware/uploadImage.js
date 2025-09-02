@@ -1,7 +1,7 @@
 const multer = require('multer');
 const multerS3 = require('multer-s3');
 const { S3Client } = require('@aws-sdk/client-s3');
-const sharp = require('sharp');
+// const sharp = require('sharp'); // Temporarily disabled
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 
@@ -57,14 +57,17 @@ const resizeAndUploadToS3 = async (file, userId) => {
     
     await s3Client.send(originalCommand);
     
-    // 썸네일 생성 (가로 100px)
-    const thumbnailBuffer = await sharp(file.buffer)
-      .resize(100, null, {
-        withoutEnlargement: true,
-        fit: 'inside',
-      })
-      .jpeg({ quality: 80 })
-      .toBuffer();
+    // 썸네일 생성 (가로 100px) - Temporarily disabled
+    // const thumbnailBuffer = await sharp(file.buffer)
+    //   .resize(100, null, {
+    //     withoutEnlargement: true,
+    //     fit: 'inside',
+    //   })
+    //   .jpeg({ quality: 80 })
+    //   .toBuffer();
+    
+    // For now, use original image as thumbnail
+    const thumbnailBuffer = file.buffer;
     
     // 썸네일 S3 업로드
     const thumbnailCommand = new PutObjectCommand({

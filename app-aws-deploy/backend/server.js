@@ -9,7 +9,7 @@ const ApplyEvent = require('./models/ApplyEvent');
 const Order = require('./models/Order');
 const Counter = require('./models/Counter');
 const User = require('./models/User');
-const { upload, resizeAndUploadToS3 } = require('./middleware/uploadImage');
+// const { upload, resizeAndUploadToS3 } = require('./middleware/uploadImage'); // Temporarily disabled
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -234,27 +234,27 @@ async function getNextSequence(name) {
   return counter.seq;
 }
 
-// 이미지 업로드가 있는 상품 등록
-app.post('/api/items', authenticateToken, upload.single('image'), async (req, res) => {
+// 상품 등록 (이미지 업로드 임시 비활성화)
+app.post('/api/items', authenticateToken, async (req, res) => {
   try {
     const itemNumber = await getNextSequence('itemNumber');
     const { salesQuantity, ...itemData } = req.body; // Remove salesQuantity if sent
     
     let imageUrls = {};
     
-    // 이미지가 업로드된 경우 S3에 저장
-    if (req.file) {
-      try {
-        const uploadResult = await resizeAndUploadToS3(req.file, req.user.userId);
-        imageUrls = {
-          imageUrl: uploadResult.originalUrl,
-          thumbnailUrl: uploadResult.thumbnailUrl
-        };
-      } catch (uploadError) {
-        console.error('Image upload error:', uploadError);
-        // 이미지 업로드 실패해도 상품은 등록되도록 처리
-      }
-    }
+    // 이미지 업로드 기능 임시 비활성화
+    // if (req.file) {
+    //   try {
+    //     const uploadResult = await resizeAndUploadToS3(req.file, req.user.userId);
+    //     imageUrls = {
+    //       imageUrl: uploadResult.originalUrl,
+    //       thumbnailUrl: uploadResult.thumbnailUrl
+    //     };
+    //   } catch (uploadError) {
+    //     console.error('Image upload error:', uploadError);
+    //     // 이미지 업로드 실패해도 상품은 등록되도록 처리
+    //   }
+    // }
     
     const item = new Item({
       ...itemData,
@@ -270,24 +270,24 @@ app.post('/api/items', authenticateToken, upload.single('image'), async (req, re
   }
 });
 
-// 이미지 업로드 전용 엔드포인트 (선택적)
-app.post('/api/upload-image', authenticateToken, upload.single('image'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No image file provided' });
-    }
-    
-    const uploadResult = await resizeAndUploadToS3(req.file, req.user.userId);
-    res.json({
-      success: true,
-      imageUrl: uploadResult.originalUrl,
-      thumbnailUrl: uploadResult.thumbnailUrl
-    });
-  } catch (error) {
-    console.error('Image upload error:', error);
-    res.status(500).json({ error: 'Failed to upload image' });
-  }
-});
+// 이미지 업로드 전용 엔드포인트 (임시 비활성화)
+// app.post('/api/upload-image', authenticateToken, upload.single('image'), async (req, res) => {
+//   try {
+//     if (!req.file) {
+//       return res.status(400).json({ error: 'No image file provided' });
+//     }
+//     
+//     const uploadResult = await resizeAndUploadToS3(req.file, req.user.userId);
+//     res.json({
+//       success: true,
+//       imageUrl: uploadResult.originalUrl,
+//       thumbnailUrl: uploadResult.thumbnailUrl
+//     });
+//   } catch (error) {
+//     console.error('Image upload error:', error);
+//     res.status(500).json({ error: 'Failed to upload image' });
+//   }
+// });
 
 app.get('/api/apply-events', authenticateToken, async (req, res) => {
   try {

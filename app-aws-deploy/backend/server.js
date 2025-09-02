@@ -9,7 +9,7 @@ const ApplyEvent = require('./models/ApplyEvent');
 const Order = require('./models/Order');
 const Counter = require('./models/Counter');
 const User = require('./models/User');
-// const { upload, resizeAndUploadToS3 } = require('./middleware/uploadImage'); // Temporarily disabled
+const { upload, resizeAndUploadToS3 } = require('./middleware/uploadImage'); // Import safe dummy exports
 
 const app = express();
 const PORT = process.env.PORT || 5001;

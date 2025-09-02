@@ -1,6 +1,0 @@
-# Docker 정리 크론잡
-# 매일 새벽 2시에 실행
-0 2 * * * /usr/local/bin/cleanup-cron.sh
-
-# 로그 로테이션 (매주 일요일 새벽 1시)
-0 1 * * 0 find /var/log -name "docker-cleanup.log" -size +10M -delete

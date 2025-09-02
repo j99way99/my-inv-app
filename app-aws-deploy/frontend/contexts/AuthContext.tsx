@@ -51,9 +51,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Redirect logic
     const isAuthPage = pathname === '/login' || pathname === '/register';
+    const isPublicPage = pathname === '/'; // Main page is public
+    const protectedPages = ['/main', '/apply-event', '/create-order', '/order-list'];
+    const isProtectedPage = protectedPages.includes(pathname);
     
     if (!isLoading) {
-      if (!token && !isAuthPage) {
+      // Only redirect to login if it's a protected page and no token
+      if (!token && isProtectedPage) {
         router.push('/login');
       } else if (token && isAuthPage) {
         router.push('/main');

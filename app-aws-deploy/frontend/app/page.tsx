@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import Link from 'next/link';
 
 interface Item {
   _id: string;
@@ -11,25 +13,39 @@ interface Item {
   stockQuantity: number;
   price: number;
   salesQuantity: number;
+  imageUrl?: string;
+  thumbnailUrl?: string;
   createdAt: string;
 }
 
 export default function Home() {
+  const { token } = useAuth();
   const [items, setItems] = useState<Item[]>([]);
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [stockQuantity, setStockQuantity] = useState('');
   const [price, setPrice] = useState('');
+  const [isPublicView, setIsPublicView] = useState(true);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const fetchItems = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/items`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      let response;
+      if (token) {
+        // Fetch user's actual items if logged in
+        response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/items`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        setIsPublicView(false);
+      } else {
+        // Fetch public/sample items if not logged in
+        response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/items/public`);
+        setIsPublicView(true);
+      }
       const data = await response.json();
       setItems(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -40,25 +56,48 @@ export default function Home() {
 
   useEffect(() => {
     fetchItems();
-  }, []);
+  }, [token]);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert('이미지 크기는 5MB를 초과할 수 없습니다.');
+        return;
+      }
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!token) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
     try {
-      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('category', category);
+      formData.append('description', description);
+      formData.append('stockQuantity', stockQuantity);
+      formData.append('price', price);
+      
+      if (imageFile) {
+        formData.append('image', imageFile);
+      }
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/items`, {
         method: 'POST',
         headers: { 
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ 
-          name, 
-          category,
-          description,
-          stockQuantity: Number(stockQuantity),
-          price: Number(price)
-        }),
+        body: formData,
       });
       if (response.ok) {
         setName('');
@@ -66,6 +105,10 @@ export default function Home() {
         setDescription('');
         setStockQuantity('');
         setPrice('');
+        setImageFile(null);
+        setImagePreview(null);
+        const fileInput = document.getElementById('image-upload') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
         fetchItems();
       }
     } catch (error) {
@@ -75,9 +118,34 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center p-8 pt-20">
-      <h1 className="text-4xl font-bold mb-8">상품 관리</h1>
+      <h1 className="text-4xl font-bold mb-8">MY재고장부</h1>
       
-      <form onSubmit={handleSubmit} className="w-full max-w-md mb-8">
+      {isPublicView && (
+        <div className="w-full max-w-4xl mb-8 p-6 bg-blue-50 border border-blue-200 rounded-lg">
+          <h2 className="text-xl font-semibold mb-2">환영합니다!</h2>
+          <p className="text-gray-700 mb-4">
+            MY재고장부는 팝업스토어, 행사전시를 위한 임시 매장 재고관리 시스템입니다.
+            아래는 샘플 데이터이며, 실제 재고 관리를 위해서는 로그인이 필요합니다.
+          </p>
+          <div className="flex gap-3">
+            <Link 
+              href="/login" 
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+            >
+              로그인
+            </Link>
+            <Link 
+              href="/register" 
+              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+            >
+              회원가입
+            </Link>
+          </div>
+        </div>
+      )}
+      
+      {!isPublicView && (
+        <form onSubmit={handleSubmit} className="w-full max-w-md mb-8">
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1">
             상품명 <span className="text-red-500">*</span>
@@ -162,16 +230,41 @@ export default function Home() {
           />
         </div>
 
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">
+            상품 이미지
+          </label>
+          <input
+            id="image-upload"
+            type="file"
+            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+            onChange={handleImageChange}
+            className="w-full p-2 border rounded"
+          />
+          {imagePreview && (
+            <div className="mt-2">
+              <img 
+                src={imagePreview} 
+                alt="Preview" 
+                className="w-32 h-32 object-cover rounded border"
+              />
+            </div>
+          )}
+        </div>
+
         <button
           type="submit"
           className="w-full p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
           상품 추가
         </button>
-      </form>
+        </form>
+      )}
 
       <div className="w-full max-w-4xl">
-        <h2 className="text-2xl font-bold mb-4">상품 목록</h2>
+        <h2 className="text-2xl font-bold mb-4">
+          {isPublicView ? '샘플 상품 목록' : '상품 목록'}
+        </h2>
         {items.length === 0 ? (
           <p>등록된 상품이 없습니다</p>
         ) : (
@@ -181,6 +274,7 @@ export default function Home() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-gray-100">
+                    <th className="border p-2">이미지</th>
                     <th className="border p-2">상품번호</th>
                     <th className="border p-2">상품명</th>
                     <th className="border p-2">분류</th>
@@ -193,6 +287,19 @@ export default function Home() {
                 <tbody>
                   {items.map((item) => (
                     <tr key={item._id}>
+                      <td className="border p-2">
+                        {item.thumbnailUrl ? (
+                          <img 
+                            src={item.thumbnailUrl} 
+                            alt={item.name}
+                            className="w-16 h-16 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
+                            No Image
+                          </div>
+                        )}
+                      </td>
                       <td className="border p-2">{item.itemNumber || '-'}</td>
                       <td className="border p-2">{item.name || '-'}</td>
                       <td className="border p-2">{item.category || '-'}</td>
@@ -213,12 +320,25 @@ export default function Home() {
               {items.map((item) => (
                 <div key={item._id} className="bg-white p-4 rounded-lg shadow border">
                   <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h3 className="font-semibold text-lg">{item.name || '-'}</h3>
-                      <p className="text-sm text-gray-600">{item.category || '-'}</p>
-                      {item.itemNumber && (
-                        <p className="text-xs text-gray-500">#{item.itemNumber}</p>
+                    <div className="flex gap-3">
+                      {item.thumbnailUrl ? (
+                        <img 
+                          src={item.thumbnailUrl} 
+                          alt={item.name}
+                          className="w-20 h-20 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-20 h-20 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
+                          No Image
+                        </div>
                       )}
+                      <div>
+                        <h3 className="font-semibold text-lg">{item.name || '-'}</h3>
+                        <p className="text-sm text-gray-600">{item.category || '-'}</p>
+                        {item.itemNumber && (
+                          <p className="text-xs text-gray-500">#{item.itemNumber}</p>
+                        )}
+                      </div>
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-lg text-blue-600">

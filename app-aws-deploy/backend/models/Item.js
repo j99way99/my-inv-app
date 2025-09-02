@@ -27,6 +27,14 @@ const itemSchema = new mongoose.Schema({
     type: Number,
     default: 0  // This will be calculated dynamically from orders
   },
+  imageUrl: {
+    type: String,
+    default: null
+  },
+  thumbnailUrl: {
+    type: String,
+    default: null
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

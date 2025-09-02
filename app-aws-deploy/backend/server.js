@@ -9,13 +9,34 @@ const ApplyEvent = require('./models/ApplyEvent');
 const Order = require('./models/Order');
 const Counter = require('./models/Counter');
 const User = require('./models/User');
+const { upload, resizeAndUploadToS3 } = require('./middleware/uploadImage');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
+// Allow multiple origins for CORS
+const allowedOrigins = [
+  'http://3.35.147.156:3000',
+  'http://ec2-3-35-147-156.ap-northeast-2.compute.amazonaws.com:3000',
+  'http://localhost:3000'
+];
+
+if (process.env.FRONTEND_URL && !allowedOrigins.includes(process.env.FRONTEND_URL)) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or Postman)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 app.use(express.json());
@@ -130,6 +151,52 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
   }
 });
 
+// Public endpoint - no authentication required
+app.get('/api/items/public', async (req, res) => {
+  try {
+    // Return sample items for public view
+    const sampleItems = [
+      {
+        _id: 'sample1',
+        itemNumber: 'ITEM-000001',
+        name: '샘플 상품 1',
+        category: '전자제품',
+        description: '이것은 샘플 상품입니다',
+        stockQuantity: 100,
+        price: 29900,
+        salesQuantity: 45,
+        createdAt: new Date()
+      },
+      {
+        _id: 'sample2',
+        itemNumber: 'ITEM-000002',
+        name: '샘플 상품 2',
+        category: '의류',
+        description: '또 다른 샘플 상품입니다',
+        stockQuantity: 50,
+        price: 19900,
+        salesQuantity: 23,
+        createdAt: new Date()
+      },
+      {
+        _id: 'sample3',
+        itemNumber: 'ITEM-000003',
+        name: '샘플 상품 3',
+        category: '식품',
+        description: '세 번째 샘플 상품입니다',
+        stockQuantity: 200,
+        price: 5900,
+        salesQuantity: 120,
+        createdAt: new Date()
+      }
+    ];
+    
+    res.json(sampleItems);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/api/items', authenticateToken, async (req, res) => {
   try {
     const items = await Item.find({ createdBy: req.user.userId });
@@ -167,12 +234,31 @@ async function getNextSequence(name) {
   return counter.seq;
 }
 
-app.post('/api/items', authenticateToken, async (req, res) => {
+// 이미지 업로드가 있는 상품 등록
+app.post('/api/items', authenticateToken, upload.single('image'), async (req, res) => {
   try {
     const itemNumber = await getNextSequence('itemNumber');
     const { salesQuantity, ...itemData } = req.body; // Remove salesQuantity if sent
+    
+    let imageUrls = {};
+    
+    // 이미지가 업로드된 경우 S3에 저장
+    if (req.file) {
+      try {
+        const uploadResult = await resizeAndUploadToS3(req.file, req.user.userId);
+        imageUrls = {
+          imageUrl: uploadResult.originalUrl,
+          thumbnailUrl: uploadResult.thumbnailUrl
+        };
+      } catch (uploadError) {
+        console.error('Image upload error:', uploadError);
+        // 이미지 업로드 실패해도 상품은 등록되도록 처리
+      }
+    }
+    
     const item = new Item({
       ...itemData,
+      ...imageUrls,
       itemNumber: `ITEM-${String(itemNumber).padStart(6, '0')}`,
       salesQuantity: 0, // Always initialize to 0
       createdBy: req.user.userId
@@ -181,6 +267,25 @@ app.post('/api/items', authenticateToken, async (req, res) => {
     res.status(201).json(item);
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+});
+
+// 이미지 업로드 전용 엔드포인트 (선택적)
+app.post('/api/upload-image', authenticateToken, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file provided' });
+    }
+    
+    const uploadResult = await resizeAndUploadToS3(req.file, req.user.userId);
+    res.json({
+      success: true,
+      imageUrl: uploadResult.originalUrl,
+      thumbnailUrl: uploadResult.thumbnailUrl
+    });
+  } catch (error) {
+    console.error('Image upload error:', error);
+    res.status(500).json({ error: 'Failed to upload image' });
   }
 });
 

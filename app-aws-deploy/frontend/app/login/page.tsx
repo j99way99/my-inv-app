@@ -45,7 +45,6 @@ export default function LoginPage() {
         setError(data.error || '로그인에 실패했습니다.');
       }
     } catch (error) {
-      console.error('Login error:', error);
       setError('로그인 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);

@@ -32,7 +32,7 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
 
     return response;
   } catch (error) {
-    console.error('API request failed:', error);
+    // Don't log full error details in production for security
     throw error;
   }
 };

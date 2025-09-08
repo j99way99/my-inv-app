@@ -3,6 +3,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
+const logger = require('./utils/logger');
 
 const Item = require('./models/Item');
 const ApplyEvent = require('./models/ApplyEvent');
@@ -42,8 +43,8 @@ app.use(cors({
 app.use(express.json());
 
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/myapp')
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+  .then(() => logger.info('MongoDB connected'))
+  .catch(err => logger.error('MongoDB connection error:', err.message));
 
 // Authentication middleware
 const authenticateToken = (req, res, next) => {
@@ -100,7 +101,7 @@ app.post('/api/auth/register', async (req, res) => {
       user
     });
   } catch (error) {
-    console.error('Registration error:', error);
+    logger.error('Registration error:', error.message);
     res.status(400).json({ error: error.message });
   }
 });
@@ -134,7 +135,7 @@ app.post('/api/auth/login', async (req, res) => {
       user
     });
   } catch (error) {
-    console.error('Login error:', error);
+    logger.error('Login error:', error.message);
     res.status(500).json({ error: '로그인 중 오류가 발생했습니다.' });
   }
 });
@@ -400,7 +401,7 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
 
 app.post('/api/orders', authenticateToken, async (req, res) => {
   try {
-    console.log('Order request body:', req.body);
+    // Remove sensitive data logging for security
     
     const order = new Order({
       ...req.body,
@@ -414,7 +415,7 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
     
     res.status(201).json(populatedOrder);
   } catch (error) {
-    console.error('Order creation error:', error);
+    logger.error('Order creation error:', error.message);
     res.status(400).json({ error: error.message, details: error });
   }
 });
@@ -440,5 +441,7 @@ app.patch('/api/orders/:id', authenticateToken, async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  logger.info(`Server is running on port ${PORT}`);
+  logger.info(`Log level: ${process.env.LOG_LEVEL || 'INFO'}`);
+  logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
